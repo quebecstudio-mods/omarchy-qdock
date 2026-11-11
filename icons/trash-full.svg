@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs>
+  <linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#a6dbe1" stop-opacity="0.3"/><stop offset="0.45" stop-color="#dff2f4" stop-opacity="0.8"/><stop offset="1" stop-color="#589199" stop-opacity="0.3"/></linearGradient>
+  <linearGradient id="rim" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#dfe7e9"/><stop offset="1" stop-color="#589199"/></linearGradient>
+  <linearGradient id="paper" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfe4ea"/></linearGradient>
+  <linearGradient id="paper2" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#fbf6e9"/><stop offset="1" stop-color="#e3dccb"/></linearGradient>
+  <clipPath id="body"><path d="M24 34 L104 34 L96 116 Q95 122 89 122 L39 122 Q33 122 32 116 Z"/></clipPath>
+</defs><path d="M24 34 L104 34 L96 116 Q95 122 89 122 L39 122 Q33 122 32 116 Z" fill="url(#glass)" stroke="#156570" stroke-opacity="0.7" stroke-width="2"/>
+  <!-- papiers vus à travers le verre -->
+  <g clip-path="url(#body)" opacity="0.3">
+    <path d="M40 50 L58 44 L70 52 L66 66 L48 68 Z" fill="#ffffff"/>
+    <path d="M66 58 L86 54 L90 70 L74 76 Z" fill="#f3eee0"/>
+    <path d="M44 80 L62 76 L64 92 L46 94 Z" fill="#ffffff"/>
+  </g><g clip-path="url(#body)" stroke="#156570" stroke-opacity="0.45" stroke-width="2.4"><line x1="38" y1="38" x2="42" y2="122"/><line x1="51" y1="38" x2="53" y2="122"/><line x1="64" y1="38" x2="64" y2="122"/><line x1="77" y1="38" x2="75" y2="122"/><line x1="90" y1="38" x2="86" y2="122"/></g><path d="M30 38 L36 110" stroke="#ffffff" stroke-opacity="0.7" stroke-width="3" stroke-linecap="round"/><!-- feuille pliée qui dépasse, penchée -->
+  <g transform="rotate(-14 46 30)">
+    <path d="M34 8 L58 6 L60 40 L36 42 Z" fill="url(#paper)" stroke="#9ba3ad" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M50 6.6 L58 6 L58.6 14 Z" fill="#cfd5dc" stroke="#9ba3ad" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M39 16 L54 15 M39.4 22 L55 21 M39.8 28 L52 27.4" stroke="#aeb8c4" stroke-width="1.6" stroke-linecap="round"/>
+  </g>
+  <!-- boule froissée -->
+  <path d="M66 14 L76 9 L86 12 L93 20 L92 30 L84 37 L72 37 L64 30 L62 21 Z" fill="url(#paper2)" stroke="#9ba3ad" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M68 17 L76 22 L86 15 M76 22 L78 33 M64 27 L76 22 L90 27" fill="none" stroke="#b5bcc5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 16 L34 12 L37 28 L21 32 Z" fill="#fac40b" stroke="#b88a00" stroke-width="1.4" stroke-linejoin="round"/><!-- petite boule à l'arrière -->
+  <path d="M90 22 L97 18 L104 22 L105 30 L98 35 L91 32 Z" fill="url(#paper)" stroke="#9ba3ad" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M93 24 L98 27 L103 23 M98 27 L97 33" fill="none" stroke="#b5bcc5" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="18" y="26" width="92" height="12" rx="6" fill="url(#rim)" stroke="#156570" stroke-width="1.5"/></svg>
