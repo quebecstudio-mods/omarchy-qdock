@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.1 - 2026-11-13
+
+### Fixed
+
+- **Covers in the Now playing tile.** A cover from the web (Spotify's, for one) sometimes never showed, and the tile kept its note. qDock now downloads each cover once into `~/.cache/qdock/covers` and shows that file.
+- **Spotify's ads.** The tile says Advertisement, with no artist and the note, instead of the ad's slogan.
+
 ## 1.1.0 - 2026-11-12
 
 ### Added

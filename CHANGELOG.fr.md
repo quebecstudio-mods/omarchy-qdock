@@ -1,5 +1,12 @@
 # Journal des versions
 
+## 1.1.1 - 2026-11-13
+
+### Corrections
+
+- **Pochettes dans la tuile Musique.** Une pochette venue du web (celle de Spotify, par exemple) ne s'affichait parfois jamais, et la tuile gardait sa note. qDock télécharge maintenant chaque pochette une fois dans `~/.cache/qdock/covers` et affiche ce fichier.
+- **Les pubs de Spotify.** La tuile affiche « Publicité », sans artiste et avec la note, plutôt que le slogan de la pub.
+
 ## 1.1.0 - 2026-11-12
 
 ### Ajouts

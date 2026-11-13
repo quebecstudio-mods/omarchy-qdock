@@ -798,20 +798,73 @@ Item {
 
   function musicTrack() {
     var p = root.musicPlayer
-    if (!p) { musicArtHold.stop(); root.musicTitle = ""; root.musicArtist = ""; root.musicArt = ""; return }
+    if (!p) { musicArtHold.stop(); root.musicTitle = ""; root.musicArtist = ""; root.showArt(""); return }
     if (!p.trackTitle) return
+    if (root.musicIsAd(p)) {
+      musicArtHold.stop()
+      root.musicTitle = strings.t("music.ad")
+      root.musicArtist = ""
+      root.showArt("")
+      return
+    }
     root.musicTitle = String(p.trackTitle)
     root.musicArtist = String(p.trackArtist || "")
     // A new track often names its cover a moment after its title: the last
     // cover stays a little while rather than the tile showing a note.
-    if (p.trackArtUrl) { musicArtHold.stop(); root.musicArt = String(p.trackArtUrl) }
+    if (p.trackArtUrl) { musicArtHold.stop(); root.showArt(String(p.trackArtUrl)) }
     else if (root.musicArt) { if (!musicArtHold.running) musicArtHold.start() }
+  }
+
+  // Spotify's ads: their track ids and addresses carry /ad/, their titles a
+  // slogan, with no artist and no cover.
+  function musicIsAd(p) {
+    var m = p.metadata || {}
+    return /^\/com\/spotify\/ad\//.test(String(m["mpris:trackid"] || ""))
+      || /^https:\/\/open\.spotify\.com\/ad\//.test(String(m["xesam:url"] || ""))
   }
 
   Timer {
     id: musicArtHold
     interval: 1500
-    onTriggered: root.musicArt = root.musicPlayer && root.musicPlayer.trackArtUrl ? String(root.musicPlayer.trackArtUrl) : ""
+    onTriggered: root.showArt(root.musicPlayer && root.musicPlayer.trackArtUrl ? String(root.musicPlayer.trackArtUrl) : "")
+  }
+
+  // A cover on the web comes down once, through curl, into a cache, and the
+  // tiles show that file: the shell's own network access sometimes loses a
+  // request (Qt warns "sendRequest() called without QHttpNetworkReply"), and
+  // the cover then never shows. The last one stays until the next is there.
+  readonly property string coverDir: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/qdock/covers"
+  property string coverWanted: ""
+
+  function showArt(url) {
+    root.coverWanted = url
+    if (!/^https?:\/\//i.test(url)) { root.musicArt = url; return }
+    if (!coverProc.running) root.fetchCover()
+  }
+
+  function fetchCover() {
+    var url = root.coverWanted
+    if (!/^https?:\/\//i.test(url)) return
+    coverProc.url = url
+    coverProc.file = root.coverDir + "/" + Qt.md5(url)
+    // Covers not shown for a month go.
+    coverProc.command = ["sh", "-c",
+      'mkdir -p "$1" && find "$1" -type f -mtime +30 -delete; [ -s "$2" ] && exec touch "$2"; ' +
+      'curl -fsSL --max-time 15 -o "$2.part" "$3" && mv -f "$2.part" "$2" || { rm -f "$2.part"; exit 1; }',
+      "sh", root.coverDir, coverProc.file, url]
+    coverProc.running = true
+  }
+
+  Process {
+    id: coverProc
+    property string url: ""
+    property string file: ""
+    onExited: exitCode => {
+      if (coverProc.url === root.coverWanted)
+        // Offline or refused: the address itself, for Qt to try.
+        root.musicArt = exitCode === 0 ? "file://" + coverProc.file : coverProc.url
+      else Qt.callLater(root.fetchCover)
+    }
   }
 
   Connections {
@@ -820,6 +873,7 @@ Item {
     function onTrackTitleChanged() { root.musicTrack() }
     function onTrackArtistChanged() { root.musicTrack() }
     function onTrackArtUrlChanged() { root.musicTrack() }
+    function onMetadataChanged() { root.musicTrack() }
   }
 
   function musicToggle() {

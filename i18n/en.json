@@ -63,6 +63,7 @@
   "music.pause": "Pause",
   "music.next": "Next track",
   "music.previous": "Previous track",
+  "music.ad": "Advertisement",
   "music.open": "Open %1",
   "music.openPlayer": "Open the player",
   "music.mute": "Mute",
