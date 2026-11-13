@@ -226,6 +226,12 @@ omarchy-shell -q quebecstudio.qdock weather           # toggle the weather's det
 It also answers to Omarchy's own dock commands (`omarchy-shell -q omarchy.dock apps`,
 `refresh`), which Omarchy sends itself, and to those of qDock 1.0.
 
+## See also
+
+- [qCenter](https://github.com/quebecstudio-mods/omarchy-qcenter), a notification center with today's agenda.
+- [qExposé](https://github.com/quebecstudio-mods/omarchy-qexpose), Exposé and Alt+Tab with previews.
+- [Changelog](CHANGELOG.md): what changed in each version.
+
 ## License
 
 MIT © Québec Studio

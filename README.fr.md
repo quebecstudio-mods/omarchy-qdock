@@ -235,6 +235,12 @@ omarchy-shell -q quebecstudio.qdock weather           # ouvrir ou fermer les dé
 Il répond aussi aux commandes du dock d'Omarchy (`omarchy-shell -q omarchy.dock apps`,
 `refresh`), qu'Omarchy envoie lui-même, et à celles de qDock 1.0.
 
+## Voir aussi
+
+- [qCenter](https://github.com/quebecstudio-mods/omarchy-qcenter), un centre de notifications avec l'agenda du jour.
+- [qExposé](https://github.com/quebecstudio-mods/omarchy-qexpose), Exposé et Alt+Tab avec aperçus.
+- [Journal des versions](CHANGELOG.fr.md) : ce qui a changé à chaque version.
+
 ## Licence
 
 MIT © Québec Studio
