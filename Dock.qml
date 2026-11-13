@@ -2,8 +2,11 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Services.Mpris
+import Quickshell.Services.Pipewire
 import qs.Commons
 import "DockModel.js" as DockModel
+import "WeatherModel.js" as WeatherModel
 
 // An app dock that shows on floating workspaces. A floating workspace has no
 // tiles to hand the apps out, so the dock gives back a place to find them:
@@ -29,6 +32,9 @@ Item {
   // files themselves (see the plugin settings below).
   property var fileDockConfig: ({})
   property var fileDefaultDockConfig: ({})
+  // The whole files, for the bar's layout (is Omarchy's weather widget there?).
+  property var fileUserConfig: ({})
+  property var fileDefaultConfig: ({})
   readonly property var dockConfig: shell && shell.shellConfig && shell.shellConfig.dock ? shell.shellConfig.dock : root.fileDockConfig
   readonly property var defaultDockConfig: shell && shell.defaultsConfig && shell.defaultsConfig.dock ? shell.defaultsConfig.dock : root.fileDefaultDockConfig
 
@@ -37,7 +43,9 @@ Item {
     printErrors: false
     onLoaded: {
       try {
-        var dock = JSON.parse(text()).dock
+        var config = JSON.parse(text())
+        root.fileDefaultConfig = config && typeof config === "object" ? config : {}
+        var dock = config.dock
         root.fileDefaultDockConfig = dock && typeof dock === "object" ? dock : {}
       } catch (e) {}
     }
@@ -136,6 +144,7 @@ Item {
       var found = {}
       try {
         var config = JSON.parse(text())
+        root.fileUserConfig = config && typeof config === "object" ? config : {}
         root.fileDockConfig = config.dock && typeof config.dock === "object" ? config.dock : {}
         var list = config.plugins || []
         root.pluginIds = list.map(function(entry) { return entry && typeof entry === "object" ? String(entry.id || "") : String(entry) })
@@ -298,10 +307,16 @@ Item {
     return item ? DesktopEntries.byId(item.key) : null
   }
 
-  // Surface style (setting style): "mac", the default, a frosted pane with
-  // round corners; "omarchy", opaque surfaces with the theme's corners and
-  // popup border, like the shell's own menus.
-  readonly property string style: root.settings.style === "omarchy" ? "omarchy" : "mac"
+  // Surface style (setting style): "omarchy", the default, follows the
+  // theme; "cupertino", "redmond" and "plasma" draw a translucent pane of
+  // their own (DockWindow tells them apart). "mac", Cupertino's name in 1.0,
+  // still reads as cupertino.
+  readonly property string style: root.settings.style === "mac" ? "cupertino"
+    : (["cupertino", "redmond", "plasma"].indexOf(root.settings.style) >= 0 ? root.settings.style : "omarchy")
+
+  // The app grid's look (setting launcher): "omarchy", the default, a card
+  // like the Omarchy dock's; "cupertino", full screen, like a Mac's.
+  readonly property string launcherStyle: root.settings.launcher === "cupertino" ? "cupertino" : "omarchy"
 
   // Icon size (setting iconSize): "small", "medium" (the default), "large",
   // or a number of pixels. The dock still shrinks icons that would not fit.
@@ -322,9 +337,14 @@ Item {
   readonly property string exposeId: "quebecstudio.qexpose"
   readonly property bool exposeAvailable: root.pluginIds.indexOf(root.exposeId) >= 0
 
-  // Apps asking for attention bounce (setting bounce, on by default) before
-  // their halo glows.
+  // How an app asking for attention shows it (setting attention): "auto",
+  // the default, as the style does; or "bounce", "flash" or "highlight" in
+  // any style. It moves (setting bounce, on by default) before its mark holds.
+  readonly property string attention: ["bounce", "flash", "highlight"].indexOf(root.settings.attention) >= 0 ? root.settings.attention : "auto"
   readonly property bool bounce: root.settings.bounce !== false
+  // The look of the name shown over a hovered slot (setting labels): "auto",
+  // the default, as the style does; or "theme", "pill" or "box" in any style.
+  readonly property string labelStyle: ["theme", "pill", "box"].indexOf(root.settings.labels) >= 0 ? root.settings.labels : "auto"
 
   // Writes a setting into the plugin's entry in shell.json; the default value
   // removes it, so the entry only holds what differs.
@@ -338,25 +358,34 @@ Item {
     Util.execArgv(["omarchy-launch-config-editor", root.userShellJson])
   }
 
-  // Icon style (setting iconStyle): "mono", the default, draws Files, the
-  // stack and the trash as glyphs in the theme's accent on a tile of its
-  // background; "glass" uses the plugin's own icons.
-  readonly property string iconStyle: root.settings.iconStyle === "glass" ? "glass" : "mono"
+  // Icon style (setting iconStyle): "omarchy" ("mono" before 1.1), the
+  // default, draws Files, the stack, the trash and the weather as glyphs in
+  // the theme's accent on a tile of its background; "glass" uses the plugin's own icons; "system" those of the
+  // icon theme, like the apps beside them (the glass ones where it has none,
+  // and the weather's sky, which icon themes seldom draw).
+  readonly property string iconStyle: ["glass", "system"].indexOf(root.settings.iconStyle) >= 0 ? root.settings.iconStyle : "omarchy"
 
-  // Files icon (setting filesIcon): "mono", "glass", "theme" (the icon
-  // theme's) or an image path such as "~/Pictures/files.png". Defaults to the
-  // icon style.
-  readonly property string filesIcon: typeof root.settings.filesIcon === "string" && root.settings.filesIcon !== "" ? root.settings.filesIcon : root.iconStyle
+  // Files icon (setting filesIcon): "omarchy", "glass", "system" (the file
+  // manager's own icon; "theme" is still read as such) or an image path such
+  // as "~/Pictures/files.png". Defaults to the icon style.
+  readonly property string filesIcon: root.settings.filesIcon === "theme" ? "system"
+    : root.settings.filesIcon === "mono" ? "omarchy"
+    : typeof root.settings.filesIcon === "string" && root.settings.filesIcon !== "" ? root.settings.filesIcon : root.iconStyle
 
-  // The Nerd Font glyph of a slot drawn in mono style, or "". Files is an owl,
-  // like the project's logo.
+  // An icon of the icon theme by name, or the fallback when it has none.
+  function systemIcon(name, fallback) {
+    return Quickshell.iconPath(name, true) || fallback
+  }
+
+  // The Nerd Font glyph of a slot drawn in the Omarchy style, or "". Files is an open
+  // folder, as in the glass style; the stack's folder has an arrow.
   function monoGlyphFor(key) {
-    return key === root.filesKey && root.filesIcon === "mono" ? "\u{f03d2}" : ""
+    return key === root.filesKey && root.filesIcon === "omarchy" ? "\u{f0770}" : ""
   }
 
   function iconFor(item) {
-    if (item && item.key === root.filesKey && root.filesIcon === "mono") return ""
-    if (item && item.key === root.filesKey && root.filesIcon !== "theme") {
+    if (item && item.key === root.filesKey && root.filesIcon === "omarchy") return ""
+    if (item && item.key === root.filesKey && root.filesIcon !== "system") {
       if (root.filesIcon === "glass") return Qt.resolvedUrl("icons/files.png")
       var path = root.filesIcon.replace(/^~(?=\/)/, Quickshell.env("HOME"))
       return path.charAt(0) === "/" ? root.fileUri(path) : ""
@@ -445,8 +474,9 @@ Item {
     for (var i = 0; i < windows.length; i++) windows[i].toplevel.close()
   }
 
-  function openApps() {
-    appGrid.open()
+  // The launcher slot opens the grid, and closes it when it is already open.
+  function toggleApps() {
+    appGrid.toggle()
   }
 
   readonly property var pinnedKeys: root.pendingPins || DockModel.pinnedIds(root.dockConfig, root.defaultDockConfig)
@@ -550,6 +580,8 @@ Item {
   Component.onCompleted: {
     refresh()
     syncItemModel()
+    musicSyncOrder()
+    musicSync()
   }
 
   Process {
@@ -615,18 +647,42 @@ Item {
     }
   }
 
+  // Omarchy's own dock commands, which Omarchy itself calls: the layout
+  // commands send refresh after changing a workspace's mode, and the launcher
+  // key sends apps. The others are qDock 1.0's, kept so its users' bindings
+  // still work; new commands go to quebecstudio.qdock only.
   ShellIpc {
     target: "omarchy.dock"
 
-    // The layout commands call this after changing a workspace's mode.
     function refresh(): void { root.refresh() }
     function apps(): void { appGrid.toggle() }
-    // Toggle the stack or the settings menu of the focused screen's dock, or,
-    // with On, of the named screen's.
     function stack(): void { root.dockForScreen("").toggleStackHere() }
     function stackOn(screen: string): void { root.dockForScreen(screen).toggleStackHere() }
-    function settings(): void { root.dockForScreen("").toggleSettingsHere() }
-    function settingsOn(screen: string): void { root.dockForScreen(screen).toggleSettingsHere() }
+    function settings(): void { settingsWindow.toggle("") }
+    function settingsOn(screen: string): void { settingsWindow.toggle("") }
+  }
+
+  ShellIpc {
+    target: "quebecstudio.qdock"
+
+    function refresh(): void { root.refresh() }
+    function apps(): void { appGrid.toggle() }
+    // Toggle the stack or the apps button's menu of the focused screen's
+    // dock, or, with On, of the named screen's.
+    function stack(): void { root.dockForScreen("").toggleStackHere() }
+    function stackOn(screen: string): void { root.dockForScreen(screen).toggleStackHere() }
+    function menu(): void { root.dockForScreen("").toggleSettingsHere() }
+    function menuOn(screen: string): void { root.dockForScreen(screen).toggleSettingsHere() }
+    // Open or close the weather's details (with the weather tile on).
+    function weather(): void { root.dockForScreen("").toggleWeatherHere() }
+    function weatherOn(screen: string): void { root.dockForScreen(screen).toggleWeatherHere() }
+    // Open or close the settings window, on the focused screen, or on its
+    // About section.
+    function settings(): void { settingsWindow.toggle("") }
+    function about(): void { settingsWindow.toggle("about") }
+    // Open the settings window on a section: appearance, behavior, tiles, weather or
+    // about.
+    function settingsAt(section: string): void { settingsWindow.open(section) }
   }
 
   // The dock on the named screen, or on the focused one; a stand-in that does
@@ -635,7 +691,7 @@ Item {
     var name = screen || (Hyprland.focusedMonitor ? Hyprland.focusedMonitor.name : "")
     var windows = docks.instances
     for (var i = 0; i < windows.length; i++) if (windows[i].screen.name === name) return windows[i]
-    return { toggleStackHere: function() {}, toggleSettingsHere: function() {} }
+    return { toggleStackHere: function() {}, toggleSettingsHere: function() {}, toggleWeatherHere: function() {} }
   }
 
   // An app dragged out of the app grid: the grid holds the pointer and
@@ -665,6 +721,352 @@ Item {
   function endExternalDrag() {
     var windows = docks.instances
     for (var i = 0; i < windows.length; i++) windows[i].endExternalDrag()
+  }
+
+  // Now playing (setting music, off by default): a tile beside the stack and
+  // the trash for the music player, any app that publishes MPRIS (Spotify,
+  // mpv, a browser...). musicPlayer prefers one by name ("Spotify").
+  // Setting music: "hidden" (the default), "mini" (the cover alone), "normal"
+  // or "large" (the title and artist beside it, wider); true reads as normal.
+  readonly property string musicSize: root.settings.music === true ? "normal"
+    : (["mini", "normal", "large"].indexOf(root.settings.music) >= 0 ? root.settings.music : "hidden")
+  readonly property bool showMusic: root.musicSize !== "hidden"
+  readonly property string musicPreferred: typeof root.settings.musicPlayer === "string" ? root.settings.musicPlayer : ""
+  readonly property var musicLive: root.showMusic
+    ? DockModel.pickMusicPlayer(Mpris.players ? Mpris.players.values : [], root.musicPreferred, root.musicOrder, root.musicPlayer) : null
+
+  // When each player started playing, by D-Bus name, as Omarchy's media
+  // service reckons it: with two playing, its keys drive the one playing the
+  // longest, so the tile shows that one too.
+  property var musicOrder: ({})
+  property int musicSerial: 0
+
+  function musicSyncOrder() {
+    var players = Mpris.players ? Mpris.players.values : []
+    var next = {}
+    for (var i = 0; i < players.length; i++) {
+      var p = players[i]
+      var key = p ? String(p.dbusName || "") : ""
+      if (!key || !p.isPlaying) continue
+      if (root.musicOrder[key] !== undefined) next[key] = root.musicOrder[key]
+      else next[key] = ++root.musicSerial
+    }
+    root.musicOrder = next
+  }
+
+  Variants {
+    model: Mpris.players ? Mpris.players.values : []
+    delegate: Connections {
+      required property var modelData
+      target: modelData
+      function onIsPlayingChanged() { root.musicSyncOrder() }
+    }
+  }
+  // Between two tracks a player clears its title for a moment: the tile keeps
+  // the last player a little while, so the dock does not shrink and grow back.
+  property var musicPlayer: null
+  onMusicLiveChanged: Qt.callLater(root.musicSync)
+
+  function musicSync() {
+    var held = root.musicPlayer
+    var values = Mpris.players ? Mpris.players.values : []
+    var live = root.musicLive
+    // The shown player lost its title (a track change): another one with a
+    // title but not playing, such as a paused browser tab, waits its turn.
+    var between = !!held && root.showMusic && values.indexOf(held) >= 0 && !held.trackTitle
+    if (between && (!live || (live !== held && !live.isPlaying))) { if (!musicHold.running) musicHold.start() }
+    else if (live) { musicHold.stop(); root.musicPlayer = live }
+    else { musicHold.stop(); root.musicPlayer = null }
+  }
+
+  Timer {
+    id: musicHold
+    interval: 1500
+    onTriggered: root.musicPlayer = root.musicLive
+  }
+
+  Connections {
+    target: Mpris.players
+    function onValuesChanged() { root.musicSyncOrder(); root.musicSync() }
+  }
+
+  // The track shown: the last one with a title, kept through that same gap.
+  property string musicTitle: ""
+  property string musicArtist: ""
+  property string musicArt: ""
+  onMusicPlayerChanged: root.musicTrack()
+
+  function musicTrack() {
+    var p = root.musicPlayer
+    if (!p) { musicArtHold.stop(); root.musicTitle = ""; root.musicArtist = ""; root.musicArt = ""; return }
+    if (!p.trackTitle) return
+    root.musicTitle = String(p.trackTitle)
+    root.musicArtist = String(p.trackArtist || "")
+    // A new track often names its cover a moment after its title: the last
+    // cover stays a little while rather than the tile showing a note.
+    if (p.trackArtUrl) { musicArtHold.stop(); root.musicArt = String(p.trackArtUrl) }
+    else if (root.musicArt) { if (!musicArtHold.running) musicArtHold.start() }
+  }
+
+  Timer {
+    id: musicArtHold
+    interval: 1500
+    onTriggered: root.musicArt = root.musicPlayer && root.musicPlayer.trackArtUrl ? String(root.musicPlayer.trackArtUrl) : ""
+  }
+
+  Connections {
+    target: root.musicPlayer
+    ignoreUnknownSignals: true
+    function onTrackTitleChanged() { root.musicTrack() }
+    function onTrackArtistChanged() { root.musicTrack() }
+    function onTrackArtUrlChanged() { root.musicTrack() }
+  }
+
+  function musicToggle() {
+    var p = root.musicPlayer
+    if (!p) return
+    if (p.canTogglePlaying) p.togglePlaying()
+    else if (p.isPlaying && p.canPause) p.pause()
+    else if (p.canPlay) p.play()
+  }
+
+  function musicNext() { if (root.musicPlayer && root.musicPlayer.canGoNext) root.musicPlayer.next() }
+  function musicPrevious() { if (root.musicPlayer && root.musicPlayer.canGoPrevious) root.musicPlayer.previous() }
+
+  // The names a player goes by: its desktop entry and its MPRIS identity
+  // ("Ferdium", "mpv"), lowercase.
+  function musicNames(p) {
+    var names = []
+    var entry = p ? DockModel.normalizeId(p.desktopEntry).toLowerCase() : ""
+    var identity = p ? String(p.identity || "").trim().toLowerCase() : ""
+    if (entry) names.push(entry)
+    if (identity && names.indexOf(identity) < 0) names.push(identity)
+    return names
+  }
+
+  // The player's app, by its desktop entry or its name, and its icon, shown on
+  // the button that opens it.
+  readonly property var musicEntry: {
+    var names = root.musicNames(root.musicPlayer)
+    for (var i = 0; i < names.length; i++) {
+      var entry = DesktopEntries.byId(names[i]) || DesktopEntries.heuristicLookup(names[i])
+      if (entry) return entry
+    }
+    return null
+  }
+  readonly property string musicIcon: !root.musicEntry || !root.musicEntry.icon ? ""
+    : root.appLibrary ? root.appLibrary.iconSource(root.musicEntry.icon) : Quickshell.iconPath(root.musicEntry.icon, true)
+
+  // The player's own window: raised through MPRIS, else brought forward like
+  // its app in the dock, else launched from its desktop entry. Electron apps
+  // such as Ferdium can not raise themselves; a web app, which goes by its
+  // browser's name, brings the browser forward.
+  function musicOpen() {
+    var p = root.musicPlayer
+    if (!p) return
+    if (p.canRaise) { p.raise(); return }
+    var names = root.musicNames(p)
+    for (var i = 0; i < root.allItems.length; i++) {
+      var item = root.allItems[i]
+      if (item.windows.length > 0 && names.indexOf(String(item.key).toLowerCase()) >= 0) { root.cycle(item, 1); return }
+    }
+    if (root.musicEntry) root.launchEntry(root.musicEntry)
+  }
+
+  // Mute: the player's playback streams in PipeWire, found by app name, which
+  // keeps its volume; MPRIS volume otherwise. Chromium and Electron players
+  // report a volume but ignore changes to it; for them the app name is the
+  // browser's or the app's, so all their sound is muted.
+  // Playback streams only, told apart without reading their properties: as
+  // Omarchy's media service notes, reading those of an unbound node while a
+  // capture stream appears (dictation) can upset Quickshell's PipeWire
+  // service. Tracking them binds them, and then their app names can be read.
+  readonly property var musicPlaybackStreams: root.showMusic && Pipewire.nodes
+    ? Pipewire.nodes.values.filter(function(node) { return DockModel.isPlaybackStream(node) }) : []
+
+  PwObjectTracker { objects: root.musicPlaybackStreams }
+
+  readonly property var musicStreams: {
+    var names = root.musicNames(root.musicPlayer)
+    if (names.length === 0) return []
+    return root.musicPlaybackStreams.filter(function(node) {
+      var props = node.ready && node.properties ? node.properties : {}
+      var app = String(props["application.name"] || "").toLowerCase()
+      var binary = String(props["application.process.binary"] || "").toLowerCase()
+      return names.indexOf(app) >= 0 || names.indexOf(binary) >= 0
+    })
+  }
+
+  readonly property bool musicCanMute: root.musicStreams.length > 0
+    || (!!root.musicPlayer && root.musicPlayer.volumeSupported && root.musicPlayer.canControl)
+  readonly property bool musicMuted: root.musicStreams.length > 0
+    ? root.musicStreams.every(function(node) { return !!node.audio && node.audio.muted })
+    : !!root.musicPlayer && root.musicPlayer.volume <= 0
+  property real musicVolumeBefore: 1
+
+  function musicToggleMute() {
+    var mute = !root.musicMuted
+    if (root.musicStreams.length > 0) {
+      root.musicStreams.forEach(function(node) { if (node.audio) node.audio.muted = mute })
+      return
+    }
+    var p = root.musicPlayer
+    if (!p || !root.musicCanMute) return
+    if (mute) { root.musicVolumeBefore = p.volume > 0 ? p.volume : 1; p.volume = 0 }
+    else p.volume = root.musicVolumeBefore
+  }
+
+  // MPRIS does not push the position: it is read again while a track plays.
+  Timer {
+    interval: 1000
+    repeat: true
+    running: !!root.musicPlayer && root.musicPlayer.isPlaying
+    onTriggered: if (root.musicPlayer) root.musicPlayer.positionChanged()
+  }
+
+  // Weather (setting weather, off by default: Omarchy's bar has its own). A
+  // tile with the condition and the temperature, the details on hover. The
+  // place is qDock's own (setting weatherLocation, picked in the settings),
+  // else the one of Omarchy's weather panel; with neither, the tile leads to
+  // the settings. While the tile is off, nothing is read or fetched.
+  // weatherUnit: "auto" (the default: the unit of Omarchy's weather widget if
+  // set, else by the place's country or the locale), "metric" or "imperial".
+  readonly property bool showWeather: root.settings.weather === true
+  readonly property string weatherUnit: ["metric", "imperial"].indexOf(root.settings.weatherUnit) >= 0 ? root.settings.weatherUnit : "auto"
+  readonly property var weatherOwnPlace: WeatherModel.parsePlace(root.settings.weatherLocation)
+  property var weatherOmarchyPlace: WeatherModel.parsePlace(null)
+  readonly property var weatherBar: WeatherModel.barWeather(root.fileUserConfig, root.fileDefaultConfig)
+  readonly property var weatherPlace: WeatherModel.effectivePlace(root.weatherOwnPlace, root.weatherOmarchyPlace)
+  readonly property bool weatherHasPlace: WeatherModel.isSet(root.weatherPlace)
+  readonly property bool weatherOwnSet: WeatherModel.isSet(root.weatherOwnPlace)
+
+  FileView {
+    path: root.showWeather ? root.home + "/.local/state/omarchy/settings/weather.json" : ""
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: root.weatherOmarchyPlace = WeatherModel.parsePlace(text())
+    onLoadFailed: root.weatherOmarchyPlace = WeatherModel.parsePlace(null)
+  }
+
+  // A place known by its name alone (a hand-edited weather.json) is looked up
+  // once by name. Only an answer is kept: a failed request (offline at login)
+  // is tried again a minute later, and a name changed mid-request is looked
+  // up when the request ends.
+  property var weatherFoundPlace: null
+  readonly property bool weatherNeedsLookup: root.showWeather && root.weatherHasPlace
+    && !WeatherModel.hasCoordinates(root.weatherPlace)
+    && !(root.weatherFoundPlace && root.weatherFoundPlace.query === root.weatherPlace.name)
+  onWeatherNeedsLookupChanged: root.lookUpWeatherPlace()
+  onWeatherPlaceChanged: root.lookUpWeatherPlace()
+  function lookUpWeatherPlace() {
+    if (!root.weatherNeedsLookup || weatherLookupProc.running) return
+    weatherLookupRetry.stop()
+    weatherLookupProc.query = root.weatherPlace.name
+    weatherLookupProc.command = ["curl", "-fsS", "--max-time", "8", WeatherModel.geocodingUrl(root.weatherPlace.name, Qt.locale().name)]
+    weatherLookupProc.running = true
+  }
+  Process {
+    id: weatherLookupProc
+    property string query: ""
+    // curl -f writes nothing on a failure, so an empty output is no answer.
+    stdout: StdioCollector {
+      onStreamFinished: if (text.trim()) {
+        var found = WeatherModel.parseGeocoding(text)
+        root.weatherFoundPlace = found.length > 0 ? Object.assign({ query: weatherLookupProc.query }, found[0]) : { query: weatherLookupProc.query }
+      }
+    }
+    onExited: exitCode => {
+      if (exitCode !== 0) weatherLookupRetry.restart()
+      else Qt.callLater(root.lookUpWeatherPlace)
+    }
+  }
+  Timer {
+    id: weatherLookupRetry
+    interval: 60000
+    onTriggered: root.lookUpWeatherPlace()
+  }
+
+  readonly property var weatherQueryPlace: WeatherModel.hasCoordinates(root.weatherPlace) ? root.weatherPlace
+    : (root.weatherFoundPlace && root.weatherFoundPlace.query === root.weatherPlace.name && WeatherModel.hasCoordinates(root.weatherFoundPlace)
+      ? root.weatherFoundPlace : null)
+  readonly property string weatherPlaceName: root.weatherPlace.name
+    || (root.weatherQueryPlace ? root.weatherQueryPlace.latitude.toFixed(2) + ", " + root.weatherQueryPlace.longitude.toFixed(2) : "")
+  readonly property bool weatherImperial: WeatherModel.usesImperial(root.weatherUnit, root.weatherBar.unit,
+    root.weatherQueryPlace ? root.weatherQueryPlace.country : "", Qt.locale().name)
+
+  // Open-Meteo's last good answer, kept on failure so the tile stays; read in
+  // the unit asked, with the days after today.
+  property var weatherRaw: null
+  readonly property var weather: root.weatherRaw
+    ? WeatherModel.parseForecast(root.weatherRaw, root.weatherImperial, Qt.formatDate(new Date(), "yyyy-MM-dd")) : null
+
+  readonly property string weatherKey: root.showWeather && root.weatherQueryPlace
+    ? root.weatherQueryPlace.latitude + "," + root.weatherQueryPlace.longitude : ""
+  onWeatherKeyChanged: {
+    root.weatherRaw = null
+    root.weatherRetries = 0
+    weatherRetry.stop()
+    if (root.weatherKey) Qt.callLater(root.refreshWeather)
+  }
+
+  property int weatherRetries: 0
+  function refreshWeather() {
+    if (!root.weatherKey || weatherProc.running) return
+    weatherProc.key = root.weatherKey
+    weatherProc.command = ["curl", "-fsS", "--max-time", "8", WeatherModel.forecastUrl(root.weatherQueryPlace)]
+    weatherProc.running = true
+  }
+
+  // Every 15 minutes, and again shortly after a failure, a few times.
+  Timer {
+    interval: 15 * 60 * 1000
+    repeat: true
+    running: root.weatherKey !== ""
+    onTriggered: { root.weatherRetries = 0; root.refreshWeather() }
+  }
+  Timer {
+    id: weatherRetry
+    interval: 30 * 1000
+    onTriggered: root.refreshWeather()
+  }
+
+  Process {
+    id: weatherProc
+    property string key: ""
+    // A place changed meanwhile: its own fetch follows.
+    onExited: if (weatherProc.key !== root.weatherKey) Qt.callLater(root.refreshWeather)
+    stdout: StdioCollector {
+      onStreamFinished: {
+        if (weatherProc.key !== root.weatherKey) return
+        var data = null
+        try { data = JSON.parse(text) } catch (e) {}
+        if (data && WeatherModel.parseForecast(data, false, "")) {
+          root.weatherRaw = data
+          root.weatherRetries = 0
+        } else if (root.weatherRetries++ < 4) weatherRetry.restart()
+      }
+    }
+  }
+
+  function weatherCondition(code) { return strings.t("weather." + WeatherModel.conditionKey(code)) }
+  function weatherGlyph(code, night) { return WeatherModel.glyph(code, night) }
+  function weatherTemp(value) { return value === null || value === undefined ? "" : Number(value).toLocaleString(Qt.locale(), "f", 0) + "°" }
+
+  // Omarchy's weather panel when it is in the bar and reports for the same
+  // place, else a forecast page for it.
+  function weatherDetails() {
+    var own = root.weatherOwnSet && !(WeatherModel.hasCoordinates(root.weatherOmarchyPlace)
+      && Math.abs(root.weatherOwnPlace.latitude - root.weatherOmarchyPlace.latitude) < 0.05
+      && Math.abs(root.weatherOwnPlace.longitude - root.weatherOmarchyPlace.longitude) < 0.05)
+    if (root.weatherBar.shown && !own) Util.execArgv(["omarchy-shell", "shell", "summon", "omarchy.weather"])
+    else Util.execArgv(["xdg-open", WeatherModel.detailsUrl(root.weatherQueryPlace || root.weatherPlace)])
+  }
+
+  // Picked in the settings: { name, latitude, longitude, country }, or null
+  // to go back to Omarchy's place.
+  function setWeatherPlace(place) {
+    root.setSetting("weatherLocation", place ? { name: place.name, latitude: place.latitude, longitude: place.longitude, country: place.country || "" } : null, null)
   }
 
   // The stack shows a folder's newest files, Downloads by default. The chosen
@@ -700,6 +1102,14 @@ Item {
   // language.
   function placeLabel(label) {
     return String(label).indexOf("places.") === 0 ? strings.t(label) : label
+  }
+
+  // The stack's icon in the system style: the icon theme's for its folder.
+  readonly property string stackSystemIcon: {
+    var names = { DOWNLOAD: "folder-download", DOCUMENTS: "folder-documents", PICTURES: "folder-pictures",
+                  DESKTOP: "user-desktop", MUSIC: "folder-music", VIDEOS: "folder-videos" }
+    for (var key in names) if (root.xdgDirs[key] === root.stackFolder) return root.systemIcon(names[key], "")
+    return root.stackFolder === root.home ? root.systemIcon("user-home", "") : root.systemIcon("folder", "")
   }
 
   readonly property string stackFolderLabel: {
@@ -993,4 +1403,11 @@ Item {
     appLibrary: root.appLibrary
     dock: root
   }
+
+  SettingsWindow {
+    id: settingsWindow
+    dock: root
+  }
+
+  function openSettings(section) { settingsWindow.open(section || "") }
 }

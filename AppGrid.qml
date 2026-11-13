@@ -30,24 +30,38 @@ Item {
   property int selectedIndex: 0
   property var apps: []
 
-  // Full screen: large icons on a frosted backdrop, in one grid that scrolls
-  // rather than pages.
-  readonly property int iconSize: Math.round(72 * Style.fontScale)
+  // Two looks (setting launcher). Omarchy, the default, is the Omarchy
+  // dock's own: a card in the middle of the screen, four rows high. Cupertino
+  // fills the screen, as on a Mac: large icons on a frosted backdrop, in one
+  // grid that scrolls rather than pages.
+  readonly property bool fullScreen: !!root.dock && root.dock.launcherStyle === "cupertino"
+  readonly property int iconSize: Math.round((fullScreen ? 72 : 56) * Style.fontScale)
   readonly property int labelHeight: Math.ceil(labelMetrics.height) * 2
   readonly property int cellGutter: Style.spacing.sm
   readonly property int cellPadding: Style.spacing.lg
-  readonly property int cellWidth: Math.round(iconSize * 2)
+  readonly property int cellWidth: Math.round(iconSize * (fullScreen ? 2 : 2.2))
   readonly property int cellHeight: cellPadding * 2 + iconSize + Style.spacing.md + labelHeight
-  readonly property int maxColumns: 8
+  readonly property int maxColumns: fullScreen ? 8 : 7
   readonly property int headerHeight: Math.max(Style.space(36), Style.font.heading + Style.spacing.controlPaddingY * 2)
   readonly property int headerSpacing: Style.spacing.xl
-  readonly property int screenMargin: Style.space(64)
+  readonly property int screenMargin: Style.space(fullScreen ? 64 : 40)
   readonly property int topMargin: Math.round(panel.height * 0.07)
   readonly property int searchWidth: Math.min(gridWidth, Style.space(380))
 
-  // As many whole columns as the screen holds, up to maxColumns, with the
-  // grid centered.
-  readonly property int columns: Math.max(1, Math.min(maxColumns, Math.floor((panel.width - screenMargin * 2) / cellWidth)))
+  // The card (Omarchy): whole columns, the grid centered in it, so any
+  // leftover width splits evenly on both sides.
+  readonly property int visibleRows: 4
+  readonly property int borderWidth: Math.max(1, Style.space(2))
+  readonly property int contentMargin: Style.spacing.panelPadding
+  readonly property int inset: contentMargin + borderWidth
+  readonly property int cardWidth: Math.min(panel.width - screenMargin * 2, maxColumns * cellWidth + inset * 2)
+  readonly property int cardHeight: Math.min(panel.height - screenMargin * 2, inset * 2 + headerHeight + headerSpacing + visibleRows * cellHeight)
+
+  // As many whole columns as the screen, or the card, holds, up to
+  // maxColumns.
+  readonly property int columns: fullScreen
+    ? Math.max(1, Math.min(maxColumns, Math.floor((panel.width - screenMargin * 2) / cellWidth)))
+    : Math.max(1, Math.floor((cardWidth - inset * 2) / cellWidth))
   readonly property int gridWidth: columns * cellWidth
   readonly property int rowCount: Math.ceil(apps.length / columns)
 
@@ -186,15 +200,16 @@ Item {
     id: panel
     shown: root.opened
     WlrLayershell.namespace: "omarchy-dock-apps"
-    // A tinted veil over the whole screen, which a blur rule on the
-    // omarchy-dock-apps layer can frost.
+    // In full screen, a tinted veil over the whole screen, which a blur rule
+    // on the omarchy-dock-apps layer can frost. The card floats on its own,
+    // over a clear screen that still takes the click that closes it.
     Item {
       anchors.fill: parent
       opacity: root.dragging ? 0 : root.reveal
 
       Rectangle {
         anchors.fill: parent
-        color: Util.alpha(Commons.Color.menu.background, 0.62)
+        color: root.fullScreen ? Util.alpha(Commons.Color.menu.background, 0.62) : "transparent"
       }
 
       Behavior on opacity {
@@ -210,6 +225,25 @@ Item {
         onClicked: {
           if (root.menuEntry) root.menuEntry = null
           else root.close()
+        }
+      }
+
+      BorderSurface {
+        id: card
+        visible: !root.fullScreen
+        width: root.cardWidth
+        height: root.cardHeight
+        anchors.centerIn: parent
+        radius: Style.cornerRadius
+        color: Commons.Color.menu.background
+        borderSpec: Border.surfaceSpec("menu", "border", Commons.Color.menu.border, root.borderWidth)
+        padding: root.contentMargin
+
+        // A click on the card only closes an app's menu.
+        MouseArea {
+          anchors.fill: parent
+          acceptedButtons: Qt.LeftButton | Qt.RightButton
+          onClicked: root.menuEntry = null
         }
       }
 
@@ -270,32 +304,34 @@ Item {
         }
       }
 
+      // The search field over the grid, in the card or high on the screen.
       Column {
         width: root.gridWidth
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.topMargin: root.topMargin
-        anchors.bottomMargin: root.screenMargin
-        spacing: root.headerSpacing * 1.5
-        scale: 1.04 - 0.04 * root.reveal
+        y: root.fullScreen ? root.topMargin : card.y + card.contentTopInset
+        height: root.fullScreen ? parent.height - root.topMargin - root.screenMargin
+          : card.height - card.contentTopInset - card.contentBottomInset
+        spacing: root.fullScreen ? root.headerSpacing * 1.5 : root.headerSpacing
+        scale: root.fullScreen ? 1.04 - 0.04 * root.reveal : 1
 
+        // A centered pill in full screen; a field across the card otherwise,
+        // as Omarchy's.
         Rectangle {
-          anchors.horizontalCenter: parent.horizontalCenter
-          width: root.searchWidth
+          x: root.fullScreen ? (parent.width - width) / 2 : root.cellGutter
+          width: root.fullScreen ? root.searchWidth : parent.width - root.cellGutter * 2
           height: root.headerHeight
-          radius: height / 2
-          color: Util.alpha(Commons.Color.menu.text, 0.1)
-          border.width: Style.normalBorderWidth
+          radius: root.fullScreen ? height / 2 : Style.cornerRadius
+          color: Util.alpha(Commons.Color.menu.text, root.fullScreen ? 0.1 : 0.06)
+          border.width: root.fullScreen ? Style.normalBorderWidth : 0
           border.color: Util.alpha(Commons.Color.menu.text, 0.14)
 
           Text {
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.leftMargin: Style.spacing.controlPaddingX * 2
-            anchors.rightMargin: Style.spacing.controlPaddingX * 2
+            anchors.leftMargin: Style.spacing.controlPaddingX * (root.fullScreen ? 2 : 1)
+            anchors.rightMargin: Style.spacing.controlPaddingX * (root.fullScreen ? 2 : 1)
             anchors.verticalCenter: parent.verticalCenter
-            horizontalAlignment: root.filterText ? Text.AlignLeft : Text.AlignHCenter
+            horizontalAlignment: root.filterText || !root.fullScreen ? Text.AlignLeft : Text.AlignHCenter
             textFormat: Text.PlainText
             text: root.filterText || strings.t("apps.search")
             color: Commons.Color.menu.text

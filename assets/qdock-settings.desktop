@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=qDock Settings
+Name[fr]=Réglages de qDock
+Comment=Dock position, style, icons, tiles
+Comment[fr]=Position, style, icônes et tuiles du dock
+Keywords=dock;qdock;settings;
+Keywords[fr]=dock;qdock;réglages;paramètres;
+Exec=omarchy-shell -q quebecstudio.qdock settings
+Icon=qdock
+Terminal=false
+NoDisplay=false
+Categories=Settings;

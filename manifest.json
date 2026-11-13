@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "id": "quebecstudio.qdock",
   "name": "qDock",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Québec Studio",
   "license": "MIT",
   "homepage": "https://github.com/quebecstudio-mods/omarchy-qdock",
-  "description": "A Mac-style dock for Omarchy: app groups, window lists, a Files owl with places, a stack, a trash, and icons that follow your theme.",
+  "description": "A Mac-style dock for Omarchy: four styles, now playing, weather, a stack, a trash, window lists and app groups, in your theme's colors.",
   "kinds": [
     "service"
   ],

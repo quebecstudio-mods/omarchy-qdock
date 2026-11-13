@@ -214,6 +214,49 @@ function jsonAt(data, path) {
   return node
 }
 
+// The player the music tile shows: one named in the musicPlayer setting
+// first, then, as Omarchy's media keys choose, the one playing the longest
+// (order: its D-Bus name -> a serial taken when it started playing), then,
+// with none playing, the one already shown (current). A player needs a title;
+// playerctld, which relays another player, is left out.
+function pickMusicPlayer(players, preferred, order, current) {
+  var want = String(preferred || "").toLowerCase()
+  var started = order || {}
+  var best = null
+  var bestScore = -1
+  var bestOrder = Infinity
+  for (var i = 0; i < (players ? players.length : 0); i++) {
+    var p = players[i]
+    if (!p || !p.trackTitle) continue
+    var key = String(p.dbusName || "")
+    if (key.indexOf("playerctld") >= 0) continue
+    var id = String(p.identity || "").toLowerCase()
+    var score = (want && id.indexOf(want) >= 0 ? 4 : 0) + (p.isPlaying ? 2 : 0) + (!p.isPlaying && p === current ? 1 : 0)
+    var rank = p.isPlaying && started[key] !== undefined ? started[key] : Infinity
+    if (score > bestScore || (score === bestScore && rank < bestOrder)) { best = p; bestScore = score; bestOrder = rank }
+  }
+  return best
+}
+
+// How far a track has gone, 0 to 1. Between two tracks a player can report the
+// old position with no length, or with the new track's shorter length: the
+// bar then shows empty rather than full.
+function trackProgress(position, length) {
+  var p = Number(position) || 0
+  var l = Number(length) || 0
+  return l > 0 && p >= 0 && p <= l ? p / l : 0
+}
+
+// A PipeWire node that plays audio out, judged as Omarchy's media service
+// does: Quickshell versions expose the node's type differently, but playback
+// streams all report isSink.
+function isPlaybackStream(node) {
+  if (!node || !node.isStream) return false
+  if (node.isSink === true) return true
+  return String(node.type || "").indexOf("Output") !== -1
+    || String(node.type || "").indexOf("AudioOutStream") !== -1
+}
+
 if (typeof module !== "undefined") {
   module.exports = {
     normalizePosition: normalizePosition,
@@ -232,6 +275,9 @@ if (typeof module !== "undefined") {
     dotCount: dotCount,
     compilePatterns: compilePatterns,
     matchesAny: matchesAny,
-    jsonAt: jsonAt
+    jsonAt: jsonAt,
+    pickMusicPlayer: pickMusicPlayer,
+    isPlaybackStream: isPlaybackStream,
+    trackProgress: trackProgress
   }
 }
