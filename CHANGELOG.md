@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1 - 2026-11-16
+
+### Changed
+
+- **The README says how to remove the plugin**, and the repository has a preview image for Omarchy's plugin directory.
+
 ## 1.2.0 - 2026-11-16
 
 ### Added

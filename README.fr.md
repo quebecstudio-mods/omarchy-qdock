@@ -109,6 +109,20 @@ cette règle à `~/.config/hypr/hyprland.lua` :
 hl.layer_rule({ match = { namespace = "^(omarchy-dock|omarchy-dock-apps)$" }, blur = true, ignore_alpha = 0.2 })
 ```
 
+## Désinstallation
+
+```bash
+omarchy plugin remove quebecstudio.qdock
+```
+
+Omarchy désactive qDock, supprime son dossier et remet son propre dock. Retirez
+ensuite ce que vous avez ajouté à la main : la règle de flou dans
+`~/.config/hypr/hyprland.lua` et, si vous l'avez copiée,
+`~/.local/share/applications/qdock-settings.desktop`. Les réglages de qDock
+restent dans son entrée sous `plugins` dans `~/.config/omarchy/shell.json`, et
+son état dans `~/.local/state/qdock` et `~/.cache/qdock` : supprimez-les aussi
+pour repartir de zéro.
+
 ## Utilisation
 
 | | Clic | Clic droit |

@@ -103,6 +103,19 @@ For the blur behind them, and behind the full-screen app grid, add this rule to
 hl.layer_rule({ match = { namespace = "^(omarchy-dock|omarchy-dock-apps)$" }, blur = true, ignore_alpha = 0.2 })
 ```
 
+## Remove
+
+```bash
+omarchy plugin remove quebecstudio.qdock
+```
+
+Omarchy turns qDock off, deletes its folder and brings its own dock back. Then
+take out what you added by hand: the blur rule in `~/.config/hypr/hyprland.lua`
+and, if you copied it, `~/.local/share/applications/qdock-settings.desktop`.
+qDock's settings stay in its entry under `plugins` in
+`~/.config/omarchy/shell.json`, and its state in `~/.local/state/qdock` and
+`~/.cache/qdock`: delete them too for a clean slate.
+
 ## Use
 
 | | Click | Right click |

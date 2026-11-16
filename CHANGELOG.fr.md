@@ -1,5 +1,11 @@
 # Journal des versions
 
+## 1.2.1 - 2026-11-16
+
+### Changements
+
+- **Le README explique comment désinstaller le plugin**, et le dépôt a une image d'aperçu pour le répertoire de plugins d'Omarchy.
+
 ## 1.2.0 - 2026-11-16
 
 ### Ajouts
