@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rim" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1d7a86"/><stop offset="1" stop-color="#0c4651"/></linearGradient>
+    <linearGradient id="glass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#8fcdd5" stop-opacity="0.94"/><stop offset="1" stop-color="#2f7680" stop-opacity="0.94"/></linearGradient>
+    <linearGradient id="sheen" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity="0.45"/><stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+  </defs>
+  <path d="M78 82 L108 112" stroke="url(#rim)" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="54" cy="54" r="40" fill="url(#rim)"/>
+  <circle cx="54" cy="54" r="30" fill="url(#glass)"/>
+  <circle cx="54" cy="54" r="30" fill="url(#sheen)"/>
+  <path d="M34 46 A22 22 0 0 1 50 31" stroke="#ffffff" stroke-opacity="0.85" stroke-width="4" fill="none" stroke-linecap="round"/>
+</svg>

@@ -337,6 +337,18 @@ Item {
   readonly property string exposeId: "quebecstudio.qexpose"
   readonly property bool exposeAvailable: root.pluginIds.indexOf(root.exposeId) >= 0
 
+  // qSpot, the search plugin, while it is enabled: a magnifier after the apps
+  // button (setting search, on by default), and the app grid hands over to
+  // it what was typed.
+  readonly property string searchId: "quebecstudio.qspot"
+  readonly property bool searchAvailable: root.pluginIds.indexOf(root.searchId) >= 0
+  readonly property bool showSearch: root.searchAvailable && root.settings.search === true
+  function openSearch(text) {
+    if (!root.searchAvailable) return
+    if (text) Util.execArgv(["omarchy-shell", "-q", root.searchId, "open", String(text)])
+    else Util.execArgv(["omarchy-shell", "-q", root.searchId, "toggle"])
+  }
+
   // How an app asking for attention shows it (setting attention): "auto",
   // the default, as the style does; or "bounce", "flash" or "highlight" in
   // any style. It moves (setting bounce, on by default) before its mark holds.
@@ -462,8 +474,15 @@ Item {
     // The pointer stays on the dock: warping to the focused window is turned
     // off while focusing, then set back to what it was.
     var noWarps = function(value) { return "hyprctl eval \"hl.config({ cursor = { no_warps = " + value + " } })\" >/dev/null" }
+    // A floating window can end up off every monitor (a monitor that went
+    // away and came back moves it each time): it would get the focus unseen,
+    // so it is centered on its own monitor as it comes forward.
+    var lost = "lost=$(hyprctl clients -j | jq -r --arg a " + Util.shellQuote(address) + " --argjson m \"$(hyprctl monitors -j)\" "
+      + Util.shellQuote(".[] | select(.address == $a and .floating) | (.at[0] + .size[0] / 2) as $x | (.at[1] + .size[1] / 2) as $y"
+        + " | [$m[] | select($x >= .x and $x < .x + .width / .scale and $y >= .y and $y < .y + .height / .scale)] | length == 0")
+      + "); [ \"$lost\" = true ] && " + dispatch("hl.dsp.window.center({ " + target + " })")
     var command = "was=$(hyprctl getoption cursor:no_warps -j | jq -r '.bool // (.int == 1)'); [ \"$was\" = true ] || was=false; "
-      + noWarps("true") + "; " + steps.map(dispatch).join(" && ") + "; " + noWarps("$was")
+      + noWarps("true") + "; " + steps.map(dispatch).join(" && ") + "; " + lost + "; " + noWarps("$was")
     if (after.length > 0) command += "; sleep 0.4; " + after.map(dispatch).join("; ")
     Util.execDetached(command)
   }
@@ -793,22 +812,28 @@ Item {
   // The track shown: the last one with a title, kept through that same gap.
   property string musicTitle: ""
   property string musicArtist: ""
+  // The album, left out when it is the track's own name (a single).
+  property string musicAlbum: ""
   property string musicArt: ""
   onMusicPlayerChanged: root.musicTrack()
 
   function musicTrack() {
     var p = root.musicPlayer
-    if (!p) { musicArtHold.stop(); root.musicTitle = ""; root.musicArtist = ""; root.showArt(""); return }
+    if (!p) { musicArtHold.stop(); root.musicTitle = ""; root.musicArtist = ""; root.musicAlbum = ""; root.showArt(""); return }
     if (!p.trackTitle) return
     if (root.musicIsAd(p)) {
       musicArtHold.stop()
-      root.musicTitle = strings.t("music.ad")
-      root.musicArtist = ""
+      // What the ad says, marked as one where the artist goes.
+      root.musicTitle = String(p.trackTitle)
+      root.musicArtist = strings.t("music.ad")
+      root.musicAlbum = ""
       root.showArt("")
       return
     }
     root.musicTitle = String(p.trackTitle)
     root.musicArtist = String(p.trackArtist || "")
+    var album = String(p.trackAlbum || "")
+    root.musicAlbum = album.toLowerCase() === root.musicTitle.toLowerCase() ? "" : album
     // A new track often names its cover a moment after its title: the last
     // cover stays a little while rather than the tile showing a note.
     if (p.trackArtUrl) { musicArtHold.stop(); root.showArt(String(p.trackArtUrl)) }
@@ -872,6 +897,7 @@ Item {
     ignoreUnknownSignals: true
     function onTrackTitleChanged() { root.musicTrack() }
     function onTrackArtistChanged() { root.musicTrack() }
+    function onTrackAlbumChanged() { root.musicTrack() }
     function onTrackArtUrlChanged() { root.musicTrack() }
     function onMetadataChanged() { root.musicTrack() }
   }
@@ -1017,7 +1043,7 @@ Item {
     if (!root.weatherNeedsLookup || weatherLookupProc.running) return
     weatherLookupRetry.stop()
     weatherLookupProc.query = root.weatherPlace.name
-    weatherLookupProc.command = ["curl", "-fsS", "--max-time", "8", WeatherModel.geocodingUrl(root.weatherPlace.name, Qt.locale().name)]
+    weatherLookupProc.command = WeatherModel.fetchCommand(WeatherModel.geocodingUrl(root.weatherPlace.name, Qt.locale().name), 8)
     weatherLookupProc.running = true
   }
   Process {
@@ -1068,7 +1094,7 @@ Item {
   function refreshWeather() {
     if (!root.weatherKey || weatherProc.running) return
     weatherProc.key = root.weatherKey
-    weatherProc.command = ["curl", "-fsS", "--max-time", "8", WeatherModel.forecastUrl(root.weatherQueryPlace)]
+    weatherProc.command = WeatherModel.fetchCommand(WeatherModel.forecastUrl(root.weatherQueryPlace), 8)
     weatherProc.running = true
   }
 

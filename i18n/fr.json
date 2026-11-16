@@ -127,5 +127,10 @@
   "settings.labelsHelp": "Le nom qui apparaît au survol d'une app.",
   "settings.labelsTheme": "Thème",
   "settings.labelsPill": "Pilule",
-  "settings.labelsBox": "Sobre"
+  "settings.labelsBox": "Sobre",
+  "search": "Recherche",
+  "apps.searchEverywhere": "Aucune app « %1 » · Entrée cherche partout avec qSpot",
+  "apps.tabEverywhere": "Tab : chercher partout",
+  "settings.search": "Recherche",
+  "settings.searchHelp": "La loupe de qSpot après le bouton des apps. Un clic droit ouvre les réglages de qSpot."
 }

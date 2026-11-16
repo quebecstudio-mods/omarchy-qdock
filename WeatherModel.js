@@ -58,6 +58,13 @@ function parseGeocoding(raw) {
   return out
 }
 
+// The curl command for an Open-Meteo request. qDock names itself: the API
+// turns some requests away when they come with curl's own User-Agent.
+function fetchCommand(url, seconds) {
+  return ["curl", "-fsS", "--max-time", String(seconds || 8),
+    "-A", "qDock (https://github.com/quebecstudio-mods/omarchy-qdock)", String(url)]
+}
+
 function forecastUrl(place) {
   return "https://api.open-meteo.com/v1/forecast"
     + "?latitude=" + encodeURIComponent(String(place.latitude))
@@ -192,6 +199,7 @@ if (typeof module !== "undefined") {
     hasCoordinates: hasCoordinates,
     effectivePlace: effectivePlace,
     parseGeocoding: parseGeocoding,
+    fetchCommand: fetchCommand,
     forecastUrl: forecastUrl,
     geocodingUrl: geocodingUrl,
     detailsUrl: detailsUrl,

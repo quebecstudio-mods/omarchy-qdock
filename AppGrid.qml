@@ -86,6 +86,15 @@ Item {
     Qt.callLater(function() { keyCatcher.forceActiveFocus() })
   }
 
+  // With qSpot enabled, what was typed can be searched everywhere: Tab, or
+  // Enter when no app matches, closes the grid and opens qSpot with it.
+  readonly property bool canHandOver: !!root.dock && root.dock.searchAvailable && root.filterText !== ""
+  function handOver() {
+    var text = root.filterText
+    root.close()
+    root.dock.openSearch(text)
+  }
+
   function close() {
     if (root.dragging && root.dock) root.dock.endExternalDrag()
     root.opened = false
@@ -293,8 +302,11 @@ Item {
             root.select(-root.columns)
           } else if (event.key === Qt.Key_Down) {
             root.select(root.columns)
+          } else if (event.key === Qt.Key_Tab && root.canHandOver) {
+            root.handOver()
           } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
-            root.launch(root.selectedIndex)
+            if (root.apps.length === 0 && root.canHandOver) root.handOver()
+            else root.launch(root.selectedIndex)
           } else if (event.text && event.text.length === 1 && event.text.charCodeAt(0) >= 32 && event.text.charCodeAt(0) !== 127) {
             root.setFilter(root.filterText + event.text)
           } else {
@@ -339,6 +351,20 @@ Item {
             font.family: Style.font.menuFamily
             font.pixelSize: Style.font.heading
             elide: Text.ElideRight
+          }
+
+          // Tab hands the search over to qSpot.
+          Text {
+            visible: root.canHandOver && root.apps.length > 0
+            anchors.right: parent.right
+            anchors.rightMargin: Style.spacing.controlPaddingX * (root.fullScreen ? 2 : 1)
+            anchors.verticalCenter: parent.verticalCenter
+            textFormat: Text.PlainText
+            text: strings.t("apps.tabEverywhere")
+            color: Commons.Color.menu.text
+            opacity: 0.5
+            font.family: Style.font.menuFamily
+            font.pixelSize: Style.font.caption
           }
         }
 
@@ -452,7 +478,7 @@ Item {
             anchors.centerIn: parent
             visible: root.apps.length === 0 && root.filterText !== ""
             textFormat: Text.PlainText
-            text: strings.t("apps.noMatch").arg(root.filterText)
+            text: root.canHandOver ? strings.t("apps.searchEverywhere").arg(root.filterText) : strings.t("apps.noMatch").arg(root.filterText)
             color: Commons.Color.menu.text
             opacity: 0.7
             font.family: Style.font.menuFamily

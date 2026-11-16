@@ -174,7 +174,7 @@ PanelWindow {
   readonly property int baseIconSize: Math.round((dock ? dock.iconSize : 45) * Style.fontScale)
   readonly property int minIconSize: Math.round(24 * Style.fontScale)
   readonly property real slotCount: appRepeater.count + 2
-    + (dock && dock.filesItem ? 1 : 0) + (dock && dock.showStack ? 1 : 0) + (dock && dock.musicPlayer ? musicSpan : 0) + (dock && dock.showWeather ? 1 : 0)
+    + (dock && dock.filesItem ? 1 : 0) + (dock && dock.showSearch ? 1 : 0) + (dock && dock.showStack ? 1 : 0) + (dock && dock.musicPlayer ? musicSpan : 0) + (dock && dock.showWeather ? 1 : 0)
   readonly property real slotRoom: ((vertical ? height : width) - gap * 2) / slotCount
   readonly property int iconSize: Math.max(minIconSize, Math.min(baseIconSize, Math.floor(slotRoom) - iconInset * 2))
   // Each app has a square slot with its icon in the middle, and the slots run
@@ -269,7 +269,7 @@ PanelWindow {
     var along = window.vertical ? point.y : point.x
     // Files, when there is a file manager, and the apps button come before
     // the first app.
-    var first = window.slotSize * ((window.dock && window.dock.filesItem ? 1 : 0) + 1)
+    var first = window.slotSize * ((window.dock && window.dock.filesItem ? 1 : 0) + (window.dock && window.dock.showSearch ? 1 : 0) + 1)
     var count = window.dock ? window.dock.itemModel.count : 0
     return Math.max(0, Math.min(count, Math.round((along - first) / window.slotSize)))
   }
@@ -601,7 +601,7 @@ PanelWindow {
       anchors.centerIn: parent
       // Files, the apps button, the apps, the music, the weather, the stack
       // and the trash.
-      columns: window.vertical ? 1 : appRepeater.count + 6
+      columns: window.vertical ? 1 : appRepeater.count + 7
 
       // Files, then the apps button, then the apps. Files sits outside the
       // apps' indices, so drags never count it.
@@ -613,6 +613,8 @@ PanelWindow {
       }
 
       AppsSlot { id: appsSlotItem }
+
+      SearchSlot { visible: !!window.dock && window.dock.showSearch }
 
       Repeater {
         id: appRepeater
@@ -1318,6 +1320,7 @@ PanelWindow {
         art: musicSlot.art
         playing: musicSlot.playing
         progress: musicSlot.progress
+        hovered: musicSlot.hovered
       }
 
       Column {
@@ -1497,6 +1500,10 @@ PanelWindow {
     property string art: ""
     property bool playing: false
     property real progress: 0
+    // Under the pointer, the tile shows what a click does: pause or play, on
+    // the cover under a veil, or in place of the note.
+    property bool hovered: false
+    readonly property string toggleGlyph: playing ? "\u{f03e4}" : "\u{f040a}"
     property bool firstFront: true
     readonly property Image front: firstFront ? coverFirst : coverSecond
     readonly property Image back: firstFront ? coverSecond : coverFirst
@@ -1540,7 +1547,7 @@ PanelWindow {
     }
 
     MonoTile {
-      glyph: "\u{f075a}"
+      glyph: musicCover.hovered ? musicCover.toggleGlyph : "\u{f075a}"
       size: musicCover.width
       radius: musicCover.cornerRadius
       opacity: 1 - musicCover.coverShown
@@ -1604,6 +1611,42 @@ PanelWindow {
           color: Commons.Color.accent
         }
       }
+
+      Rectangle {
+        anchors.fill: parent
+        color: Util.alpha("black", 0.4)
+        opacity: musicCover.hovered ? 1 : 0
+        visible: opacity > 0
+        Behavior on opacity { NumberAnimation { duration: Style.duration(120) } }
+        Text {
+          anchors.centerIn: parent
+          textFormat: Text.PlainText
+          text: musicCover.toggleGlyph
+          color: "white"
+          font.family: Style.fontFamily
+          font.pixelSize: Math.round(musicCover.width * 0.5)
+        }
+      }
+    }
+  }
+
+  // qSpot's magnifier: a click opens or closes the search.
+  component SearchSlot: IconSlot {
+    label: strings.t("search")
+    readonly property string glassIcon: Qt.resolvedUrl("icons/search.png")
+    iconSource: window.dock && window.dock.iconStyle === "system"
+      ? window.dock.systemIcon("system-search", glassIcon) : glassIcon
+    glyph: "\u{f0349}"
+    insertShift: -window.slotSize / 2
+
+    mouse.onClicked: function(event) {
+      if (event.button === Qt.RightButton) {
+        window.closeMenu()
+        Util.execArgv(["omarchy-shell", "-q", window.dock.searchId, "settings"])
+        return
+      }
+      window.closeMenu()
+      if (window.dock) window.dock.openSearch("")
     }
   }
 
@@ -2088,12 +2131,12 @@ PanelWindow {
           Text {
             width: parent.width
             textFormat: Text.PlainText
-            text: musicPopup.player && musicPopup.player.identity ? musicPopup.player.identity : ""
+            text: window.dock ? window.dock.musicAlbum : ""
             visible: text !== ""
             elide: Text.ElideRight
-            color: Util.alpha(Commons.Color.popups.text, 0.55)
+            color: Util.alpha(Commons.Color.popups.text, 0.75)
             font.family: Style.font.family
-            font.pixelSize: Style.font.caption
+            font.pixelSize: Style.font.bodySmall
           }
         }
       }

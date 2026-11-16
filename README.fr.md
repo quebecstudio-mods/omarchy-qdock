@@ -29,6 +29,9 @@ grille d'apps, son Launchpad) et ajoute :
 - **La musique en cours**, si vous le voulez : une tuile avec la pochette, le titre et l'artiste de la
   musique qui joue (ou en pause) dans n'importe quel lecteur (Spotify, mpv, un navigateur ou une app
   web). Au survol, la progression et les commandes.
+- **La recherche**, avec [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot) installé :
+  une loupe après le bouton des apps, et une grille d'apps qui passe ce que vous avez tapé à qSpot
+  (Tab, ou Entrée quand aucune app ne correspond).
 - **La météo**, si vous le voulez : le ciel et la température, et les trois prochains jours au
   survol. Elle s'ajoute au module météo de la barre d'Omarchy, sans le remplacer.
 - **Pastilles, rebonds et groupes.** Les apps qui demandent l'attention
@@ -115,6 +118,7 @@ hl.layer_rule({ match = { namespace = "^(omarchy-dock|omarchy-dock-apps)$" }, bl
 | **App** | L'ouvrir, ou la ramener | Ses fenêtres, nouvelle fenêtre, garder dans le dock ou l'en retirer, quitter |
 | **Pile** | Les derniers fichiers du dossier | Pareil |
 | **Corbeille** | L'ouvrir (ou la ramener) | Vider la corbeille |
+| **Recherche** (avec qSpot) | Ouvrir qSpot | Les réglages de qSpot |
 | **Musique en cours** | Lecture ou pause | Garder les commandes ouvertes |
 | **Météo** | Garder les détails ouverts (sans lieu, en choisir un) | Ses réglages |
 
@@ -129,8 +133,9 @@ propose d'en choisir un. **Détails** ouvre le panneau météo d'Omarchy s'il es
 dans la barre et donne le même lieu, sinon une page de prévisions. Un clic du
 milieu la met à jour.
 
-Les commandes de la musique s'affichent au survol : précédente, lecture ou
-pause, suivante, sourdine et le lecteur. La sourdine coupe le lecteur, pas tout
+Sous le pointeur, la tuile Musique montre lecture ou pause, et sa bulle le
+titre, l'artiste et l'album. Les commandes s'affichent au survol : précédente,
+lecture ou pause, suivante, sourdine et le lecteur. La sourdine coupe le lecteur, pas tout
 le système (pour une app web, tout son navigateur). Avec plusieurs lecteurs
 ouverts, la tuile montre celui que pilotent les touches multimédias d'Omarchy,
 celui qui joue depuis le plus longtemps, à moins que `musicPlayer` en désigne
@@ -184,6 +189,7 @@ au bas de la fenêtre l'ouvre) :
 | `stack` | Afficher la pile | `true` |
 | `stackCount` | Fichiers dans la pile, de 5 à 30 | `15` |
 | `stackFolders` | Dossiers proposés en plus de Téléchargements, Documents, Bureau et Images | `[]` |
+| `search` | La loupe de qSpot après le bouton des apps (avec qSpot activé) | `false` |
 | `music` | Musique en cours : `"hidden"`, `"mini"` (la pochette seule), `"normal"`, `"large"` (plus large, pour les longs titres) ; la pochette seule sur un dock latéral | `"hidden"` |
 | `musicPlayer` | Le lecteur à montrer d'abord, par une partie de son nom, sans tenir compte de la casse (`"spotify"`) | `""` |
 | `weather` | Afficher la tuile météo | `false` |
@@ -239,6 +245,7 @@ Il répond aussi aux commandes du dock d'Omarchy (`omarchy-shell -q omarchy.dock
 
 - [qCenter](https://github.com/quebecstudio-mods/omarchy-qcenter), un centre de notifications avec l'agenda du jour.
 - [qExposé](https://github.com/quebecstudio-mods/omarchy-qexpose), Exposé et Alt+Tab avec aperçus.
+- [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot), une recherche façon Spotlight : apps, fichiers, calculs et web.
 - [Journal des versions](CHANGELOG.fr.md) : ce qui a changé à chaque version.
 
 ## Licence

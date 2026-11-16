@@ -72,7 +72,7 @@ Item {
     var name = placeField.text.trim()
     if (name.length < 2 || placeProc.running || name === placeProc.query) return
     placeProc.query = name
-    placeProc.command = ["curl", "-fsS", "--max-time", "6", WeatherModel.geocodingUrl(name, Qt.locale().name)]
+    placeProc.command = WeatherModel.fetchCommand(WeatherModel.geocodingUrl(name, Qt.locale().name), 6)
     placeProc.running = true
   }
   Process {
@@ -477,6 +477,16 @@ Item {
             }
 
             // ---- Tiles ----
+            Toggle {
+              visible: root.section === "tiles" && !!root.dock && root.dock.searchAvailable
+              width: page.width
+              label: strings.t("settings.search")
+              description: strings.t("settings.searchHelp")
+              foreground: root.foreground
+              checked: !!root.dock && root.dock.showSearch
+              onClicked: root.dock.setSetting("search", !root.dock.showSearch, false)
+            }
+
             Toggle {
               visible: root.section === "tiles"
               width: page.width

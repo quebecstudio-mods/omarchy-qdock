@@ -27,6 +27,9 @@ dock does (pinned apps, running windows, auto-hide, the app grid, its Launchpad)
   emptied from its menu.
 - **Now playing**, if you want: a tile with the cover, title and artist of the music playing (or
   paused) in any player (Spotify, mpv, a browser or a web app). Hover it for the progress and the controls.
+- **Search**, with [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot) installed: a
+  magnifier after the apps button, and an app grid that hands what you typed over to qSpot (Tab, or
+  Enter when no app matches).
 - **The weather**, if you want: the sky and the temperature, and the next three days on hover. It
   comes in addition to the weather module of Omarchy's bar, not instead.
 - **Badges, bounces and groups.** Apps asking for attention bounce, flash or light up;
@@ -109,6 +112,7 @@ hl.layer_rule({ match = { namespace = "^(omarchy-dock|omarchy-dock-apps)$" }, bl
 | **App** | Open it, or bring it forward | Its windows, new window, keep in or remove from the dock, quit |
 | **Stack** | The folder's newest files | The same |
 | **Trash** | Open it (or bring it back) | Empty the trash |
+| **Search** (with qSpot) | Open qSpot | qSpot's settings |
 | **Now playing** | Play or pause | Keep the controls open |
 | **Weather** | Keep the details open (with no place yet, pick one) | Its settings |
 
@@ -122,8 +126,9 @@ place set in qDock or in Omarchy's weather panel, the tile asks you to pick one.
 **Details** opens Omarchy's weather panel when it is in the bar and reports for
 the same place, else a forecast page. A middle click fetches it again.
 
-The music controls show on hover: previous, play or pause, next, mute and the
-player. Mute silences the player, not the whole system (for a web app, its
+The music tile shows play or pause under the pointer, and its popover the
+title, the artist and the album. The controls show on hover: previous, play or
+pause, next, mute and the player. Mute silences the player, not the whole system (for a web app, its
 whole browser). With several players open, the tile shows the one Omarchy's
 media keys control, the one playing the longest, unless `musicPlayer` names
 another.
@@ -176,6 +181,7 @@ the window opens it):
 | `stack` | Show the stack | `true` |
 | `stackCount` | Files in the stack, 5 to 30 | `15` |
 | `stackFolders` | Folders offered besides Downloads, Documents, Desktop and Pictures | `[]` |
+| `search` | The qSpot magnifier after the apps button (with qSpot enabled) | `false` |
 | `music` | Now playing: `"hidden"`, `"mini"` (the cover alone), `"normal"`, `"large"` (wider, for long titles); the cover alone on a side dock | `"hidden"` |
 | `musicPlayer` | The player to show first, by part of its name, any case (`"spotify"`) | `""` |
 | `weather` | Show the weather tile | `false` |
@@ -230,6 +236,7 @@ It also answers to Omarchy's own dock commands (`omarchy-shell -q omarchy.dock a
 
 - [qCenter](https://github.com/quebecstudio-mods/omarchy-qcenter), a notification center with today's agenda.
 - [qExposé](https://github.com/quebecstudio-mods/omarchy-qexpose), Exposé and Alt+Tab with previews.
+- [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot), a Spotlight-style search: apps, files, calculations and the web.
 - [Changelog](CHANGELOG.md): what changed in each version.
 
 ## License

@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.0 - 2026-11-16
+
+### Added
+
+- **Search with qSpot.** With [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot) enabled, a magnifier can sit after the apps button (`search`, off by default; a right click opens qSpot's settings). In the app grid, Tab hands what you typed over to qSpot to search everywhere, and so does Enter when no app matches.
+- **The album** in the Now playing popover, under the title and the artist (left out for a single named like its track).
+
+### Changed
+
+- **Now playing:** under the pointer, the tile shows what a click does, play or pause, on the cover or in place of the note. The popover no longer names the player.
+- **Spotify's ads** keep their own text as the title, with Advertisement where the artist goes.
+
+### Fixed
+
+- **Windows off screen.** A floating window can drift off every monitor when one goes away and comes back (a monitor going to sleep). A click on its app gave it the focus unseen; the dock now centers it on its monitor as it brings it forward.
+- **Weather that never loads.** Open-Meteo turned the forecast away (403) when it came with curl's own User-Agent, and the tile stayed at "…". qDock now names itself in its requests.
+
 ## 1.1.1 - 2026-11-13
 
 ### Fixed

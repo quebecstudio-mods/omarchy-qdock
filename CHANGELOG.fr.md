@@ -1,5 +1,22 @@
 # Journal des versions
 
+## 1.2.0 - 2026-11-16
+
+### Ajouts
+
+- **La recherche avec qSpot.** Avec [qSpot](https://github.com/quebecstudio-mods/omarchy-qspot) activé, une loupe peut se placer après le bouton des apps (`search`, désactivée par défaut ; un clic droit ouvre les réglages de qSpot). Dans la grille d'apps, Tab passe ce que vous avez tapé à qSpot pour chercher partout, et Entrée aussi quand aucune app ne correspond.
+- **L'album** dans la bulle de la musique en cours, sous le titre et l'artiste (omis pour un single qui porte le nom de sa piste).
+
+### Changements
+
+- **Musique en cours :** sous le pointeur, la tuile montre ce que fait un clic, lecture ou pause, sur la pochette ou à la place de la note. La bulle ne nomme plus le lecteur.
+- **Les pubs de Spotify** gardent leur propre texte comme titre, avec « Publicité » à la place de l'artiste.
+
+### Corrections
+
+- **Fenêtres hors écran.** Une fenêtre flottante peut sortir de tous les écrans quand l'un d'eux disparaît puis revient (mise en veille d'un moniteur). Un clic sur son app lui donnait le focus sans qu'on la voie ; le dock la recentre maintenant sur son écran en la ramenant.
+- **Météo qui ne se charge jamais.** Open-Meteo refusait les prévisions (403) quand la requête partait avec l'identifiant par défaut de curl, et la tuile restait sur « … ». qDock s'identifie maintenant dans ses requêtes.
+
 ## 1.1.1 - 2026-11-13
 
 ### Corrections

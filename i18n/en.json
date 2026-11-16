@@ -127,5 +127,10 @@
   "settings.labelsHelp": "The name shown when you hover an app.",
   "settings.labelsTheme": "Theme",
   "settings.labelsPill": "Pill",
-  "settings.labelsBox": "Plain"
+  "settings.labelsBox": "Plain",
+  "search": "Search",
+  "apps.searchEverywhere": "No app named “%1” · Enter searches everywhere with qSpot",
+  "apps.tabEverywhere": "Tab: search everywhere",
+  "settings.search": "Search",
+  "settings.searchHelp": "qSpot's magnifier after the apps button. A right click opens qSpot's settings."
 }
